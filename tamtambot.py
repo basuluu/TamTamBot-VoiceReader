@@ -5,58 +5,64 @@ import requests
 import os
 import settings
 
+
+"""
+    TODO: Refactor!
+    TODO: Replace WIT
+    TODO: Stop spam ffmpeg!
+    TODO: Replace threads -> Async!
+    TODO: Web hook! KILL POLLING!
+"""
+
 class TamTamVoiceBot():
     
-    base_url = 'https://botapi.tamtam.chat'
-    access_token = settings.tamtam_token
+    API_URL = 'https://botapi.tamtam.chat'
+
+    tam_api_key = settings.tamtam_token
     wit_api_key = settings.wit_api_key
-    
 
     def __init__(self):
-        self.client = Wit('ZK3W3NFUHDO3ORWT4GYG4XUA7ODCP24Q')
+        self.client = Wit(self.wit_api_key)
 
-    
     def send_message_by_chat_id(self, chat_id, mid, text):
-        url = self.base_url + '/messages'
-       
-        headers = {'Content-Type': 'application/json; charset=utf-8'}
-        params = {
-            'access_token': self.access_token,
-            'chat_id': chat_id,
+        query_params = {
+            'url': self.API_URL + '/messages',
+            'headers': {
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            'params': {
+                'access_token': self.tam_api_key, 
+                'chat_id': chat_id
+            },
+            'json': {
+                'text': text, 
+                'attachments': None, 
+                'link': {'type': 'reply', 'mid': mid} if mid else None
+            },
         }
-        data = {
-            'text': text,
-            'attachments': None,
-            'link': None
-        }
-        
-        if mid:
-            data['link'] = {
-                'type': 'reply',
-                'mid': mid
-            }
-        
-        r = requests.post(url=url, headers=headers, params=params, json=data)
+        r = requests.post(**query_params)
         return r.json()['message']['body']['mid']
     
     def edit_message_by_message_id(self, last_mid, mid, text):
-        url = self.base_url + '/messages'
-       
-        headers = {'Content-Type': 'application/json; charset=utf-8'}
-        params = {
-            'access_token': self.access_token,
-            'message_id': last_mid,
-        }
-        data = {
-            'text': text,
-            'attachments': None,
-            'link': {
-                'type': 'reply',
-                'mid': mid
+        query_params = {
+            'url': self.API_URL + '/messages',
+            'headers': {
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            'params': {
+                'access_token': self.tam_api_key,
+                'message_id': last_mid,
+            },
+            'json': {
+                'text': text,
+                'attachments': None,
+                'link': {
+                    'type': 'reply',
+                    'mid': mid
+                }
             }
-        }
-        
-        r = requests.put(url=url, headers=headers, params=params, json=data)
+        }    
+        r = requests.put(**query_params)
         
     def send_error_message(self, chat_id, mid):
         text = "Я умею работать только с голосовыми сообщениями :("
@@ -70,7 +76,7 @@ class TamTamVoiceBot():
     def get_text_by_audio(self, audio_file_name):
         with open(audio_file_name, 'rb') as f:
             resp = self.client.speech(f, None, {'Content-Type': 'audio/mpeg'})
-        return resp['_text']
+        return resp['text']
     
     def is_voice_message(self, upd):
         if upd['message'].get('link', False):
@@ -88,12 +94,12 @@ class TamTamVoiceBot():
             return True
         return False
     
-    def get_voice_message_link(self, upd):
+    def get_voice_message_url(self, upd):
         if upd['message'].get('link', False):
-            link = upd['message']['link']['message']['attachments'][0]['payload']['url']
+            msg = upd['message']['link']['message']
         else:
-            link = upd['message']['body']['attachments'][0]['payload']['url']
-        return link
+            msg = upd['message']['body']
+        return msg['attachments'][0]['payload']['url']
     
     def get_chat_id(self, upd):
         return upd['message']['recipient']['chat_id']
@@ -113,10 +119,10 @@ class TamTamVoiceBot():
         text = "Начинаю распознавание!"  
         last_mid = self.send_message_by_chat_id(chat_id, mid, text)
         
-        link = self.get_voice_message_link(upd)
+        voice_message_url = self.get_voice_message_url(upd)
         file_name = self.get_audio_file_name(upd)
         
-        self.download_voice_message(link, file_name)
+        self.download_voice_message(voice_message_url, file_name)
         self.devide_audio_file(file_name)
         file_names = self.get_devided_audio_file_names(file_name)
         
@@ -127,9 +133,10 @@ class TamTamVoiceBot():
         self.edit_message_by_message_id(last_mid, mid, text)
         
     def devide_audio_file(self, file_name):
-        cmd = "/usr/bin/ffmpeg -i {fn} -f segment -segment_time 19 -c copy {ofn}_%02d.mp3".format(
-            fn=file_name,
-            ofn=file_name[:-4]
+        fn, fmt = file_name.split('.')
+        cmd = (
+            f"/usr/bin/ffmpeg -i {file_name} -f segment -segment_time 19 -c copy {fn}_%02d.{fmt}; "
+            f"rm {file_name}"
         )
         subprocess.run(cmd.split())
 
@@ -142,9 +149,9 @@ class TamTamVoiceBot():
     def polling(self):
         while True:
             try:
-                url = self.base_url + '/updates'
+                url = self.API_URL + '/updates'
                 params = {
-                    'access_token': self.access_token
+                    'access_token': self.tam_api_key
                 }
                 r = requests.get(url=url, params=params)
                 updates = r.json()['updates']
