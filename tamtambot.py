@@ -8,11 +8,9 @@ from wit import Wit
 import settings
 
 """
-    TODO: Refactor!
-    TODO: Replace WIT
+    TODO: Refactor 80/100!
     TODO: Stop spam ffmpeg!
     TODO: Replace threads -> Async!
-    TODO: Web hook! KILL POLLING!
 """
 
 class TamTamVoiceBot():
