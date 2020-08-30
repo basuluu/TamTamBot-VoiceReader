@@ -19,6 +19,7 @@ class TamTamVoiceBot():
     
     API_URL = 'https://botapi.tamtam.chat'
 
+    webhook_url = settings.ngrok_url
     tam_api_key = settings.tamtam_token
     wit_api_key = settings.wit_api_key
 
@@ -27,6 +28,24 @@ class TamTamVoiceBot():
 
     def __init__(self):
         self.client = Wit(self.wit_api_key)
+        self.set_webhook()
+
+    def set_webhook(self):
+        query_params = {
+            'url': self.API_URL + '/subscriptions',
+            'headers': {
+                'Content-Type': 'application/json; charset=utf-8'
+            },
+            'params': {
+                'access_token': self.tam_api_key, 
+            },
+            'json': {
+                'url': self.webhook_url,
+
+            }
+        }
+        r = requests.post(**query_params)
+        print(r.json())
 
     def send_message_by_chat_id(self, chat_id, msg_id, text):
         query_params = {
@@ -123,29 +142,7 @@ class TamTamVoiceBot():
         self.edit_message_by_message_id(last_msg_id, msg_id, text)
 
         [os.remove(fn) for fn in file_names + [file_name]]
-
-    def polling(self):
-        while True:
-            try:
-                query_params = {
-                    'url': self.API_URL + '/updates',
-                    'params': {
-                        'access_token': self.tam_api_key
-                    }
-                }
-
-                r = requests.get(**query_params)
-                updates = r.json()['updates']
-                if not updates:
-                    continue
-
-                for upd in updates:
-                    th = Thread(target=self.create_answer, args=(upd,))
-                    th.start()
-            except KeyboardInterrupt:
-                break
                 
 
 if __name__ == "__main__":
     bot = TamTamVoiceBot()
-    bot.polling()
