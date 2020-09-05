@@ -1,6 +1,5 @@
 import os
 import subprocess
-from threading import Thread
 
 import requests
 from wit import Wit
@@ -10,7 +9,6 @@ import settings
 """
     TODO: Refactor 80/100!
     TODO: Stop spam ffmpeg!
-    TODO: Replace threads -> Async!
 """
 
 class TamTamVoiceBot():
@@ -39,11 +37,9 @@ class TamTamVoiceBot():
             },
             'json': {
                 'url': self.webhook_url,
-
             }
         }
         r = requests.post(**query_params)
-        print(r.json())
 
     def send_message_by_chat_id(self, chat_id, msg_id, text):
         query_params = {
@@ -117,7 +113,7 @@ class TamTamVoiceBot():
     def devide_audio_file(self, file_name):
         fn, fmt = file_name.split('.')
         cmd = (
-            f"/usr/bin/ffmpeg -i {file_name} -f segment -segment_time 19 -c copy {fn}_%02d.{fmt}"
+            f"/usr/bin/ffmpeg -i {file_name} -f segment -segment_time 20 -c copy {fn}_%02d.{fmt}"
         )
         subprocess.call(cmd.split())
         return sorted([file_ for file_ in os.listdir() if file_.startswith(fn + '_')])        
