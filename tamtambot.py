@@ -1,15 +1,9 @@
-import os
-import subprocess
-
 import requests
 from wit import Wit
 
 import settings
+from utils.voice_message import get_text_by_audio, download_voice_message, devide_audio_file, collect_garbage
 
-"""
-    TODO: Refactor 80/100!
-    TODO: Stop spam ffmpeg!
-"""
 
 class TamTamVoiceBot():
     
@@ -80,16 +74,6 @@ class TamTamVoiceBot():
             }
         }    
         r = requests.put(**query_params)
-        
-    def download_voice_message(self, url, file_name):
-        ufr = requests.get(url)
-        with open(file_name, 'wb') as f:
-            f.write(ufr.content)
-            
-    def get_text_by_audio(self, audio_file_name):
-        with open(audio_file_name, 'rb') as f:
-            resp = self.client.speech(f, None, {'Content-Type': 'audio/mpeg'})
-        return resp['text']
     
     def get_voice_message_url(self, upd):
         try:
@@ -108,15 +92,7 @@ class TamTamVoiceBot():
         return upd['message']['recipient']['chat_id']
     
     def get_audio_file_name(self, upd):
-        return '%s.mp3' % upd['message']['body']['seq']
-        
-    def devide_audio_file(self, file_name):
-        fn, fmt = file_name.split('.')
-        cmd = (
-            f"/usr/bin/ffmpeg -i {file_name} -f segment -segment_time 20 -c copy {fn}_%02d.{fmt}"
-        )
-        subprocess.call(cmd.split())
-        return sorted([file_ for file_ in os.listdir() if file_.startswith(fn + '_')])        
+        return '%s.mp3' % upd['message']['body']['seq']        
     
     def create_answer(self, upd):        
         msg_id  = self.get_message_id(upd)
@@ -129,13 +105,14 @@ class TamTamVoiceBot():
         last_msg_id = self.send_message_by_chat_id(chat_id, msg_id, self.MSG_START_RECOGNIZE)
         
         file_name = self.get_audio_file_name(upd)
-        self.download_voice_message(voice_message_url, file_name)
-        file_names = self.devide_audio_file(file_name)
+        download_voice_message(voice_message_url, file_name)
+        file_names = devide_audio_file(file_name)
         
-        text = "Текст:" + ' '.join([self.get_text_by_audio(fn) for fn in file_names])
+        # TODO: Передаю туда сейчас название файла, а надо путь
+        text = "Текст:" + ' '.join([get_text_by_audio(self.client, fn) for fn in file_names])
         self.edit_message_by_message_id(last_msg_id, msg_id, text)
 
-        [os.remove(fn) for fn in file_names + [file_name]]
+        collect_garbage(file_names + [file_name])
                 
 
 if __name__ == "__main__":
