@@ -2,7 +2,7 @@ This webhook-bot takes text from voice messages and reply it. It use WIT-AI to r
 
 
 ### Install using Docker
-1. Define your tamtam token and wit api key in settings.py
+1. Set your tamtam token and wit api key in settings.py
 ```
 tamtam_token = 'Your tamtam token'
 wit_api_key = 'Your wit api key'
