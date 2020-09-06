@@ -3,13 +3,14 @@ from wit import Wit
 
 import settings
 from utils.voice_message import get_text_by_audio, download_voice_message, devide_audio_file, collect_garbage
+from utils.ngrok import get_ngrok_tunnel
 
 
 class TamTamVoiceBot():
     
     API_URL = 'https://botapi.tamtam.chat'
 
-    webhook_url = settings.ngrok_url
+    webhook_url = get_ngrok_tunnel()
     tam_api_key = settings.tamtam_token
     wit_api_key = settings.wit_api_key
 
@@ -108,7 +109,6 @@ class TamTamVoiceBot():
         download_voice_message(voice_message_url, file_name)
         file_names = devide_audio_file(file_name)
         
-        # TODO: Передаю туда сейчас название файла, а надо путь
         text = "Текст:" + ' '.join([get_text_by_audio(self.client, fn) for fn in file_names])
         self.edit_message_by_message_id(last_msg_id, msg_id, text)
 

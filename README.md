@@ -1,16 +1,14 @@
-This polling-bot takes text from voice messages and reply it. It use wit AI to recognize voice to text
+This webhook-bot takes text from voice messages and reply it. It use WIT-AI to recognize voice to text.
 
-### Install it!
 
-1. `pip3 install -r requirements.txt`
-2. Set settings file. 
-3. Run localhost tunnel -> `./ngrok http 5000`
-4. Run flask
+### Install using Docker
+1. Define your tamtam token and wit api key in settings.py
 ```
-export FLASK_APP=app.py
-python -m flask run
+tamtam_token = 'Your tamtam token'
+wit_api_key = 'Your wit api key'
 ```
-
-### Using Docker
-```docker build -t voice_reader .
-docker run -p 5000:5000 voice_reader:latest```
+2. Build and run container
+```
+docker build -t voice_reader .
+docker run -p 5000:5000 voice_reader:latest
+```
